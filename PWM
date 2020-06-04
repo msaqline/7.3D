@@ -1,0 +1,59 @@
+import RPi.GPIO as gpio
+import time
+gpio.setmode(gpio.BCM)
+TRIG = 14
+ECHO = 17
+light = 23
+
+gpio.setup(light, gpio.OUT)
+gpio.setup(TRIG, gpio.OUT)
+gpio.setup(ECHO, gpio.IN)
+pwm = gpio.PWM(light, 50)
+pwm.start(0)
+
+minRange = 0
+maxRange = 100
+
+def distance():
+    #gpio.output(TRIG, False)
+    #print("Waiting for sensor to settle")
+    #time.sleep(2)
+    
+    gpio.output(TRIG, True)
+    time.sleep(0.00001)
+    gpio.output(TRIG, False)
+    
+    startTime = time.time()
+    stopTime = time.time()
+    
+    while gpio.input(ECHO) == 0:
+        startTime = time.time()
+    
+    while gpio.input(ECHO) == 1:
+        stopTime = time.time()
+        
+    timeElapsed = stopTime - startTime
+    distance = timeElapsed * 17150/2
+    
+    return distance
+
+if __name__ == '__main__':
+    try:
+        while True:
+            dis = distance()
+            print("Distance = %.0f cm" %dis)
+            if (dis <= maxRange):
+                dc = 100 - dis
+                print("Duty = %d"%dc)
+                pwm.ChangeDutyCycle(dc)
+                
+                
+            else:
+                pwm.ChangeDutyCycle(0)
+                
+               
+                print("Out of range")
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopped")  
+        gpio.cleanup() 
